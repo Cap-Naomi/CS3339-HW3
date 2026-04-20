@@ -20,17 +20,35 @@ int main(int argc, char*argv[]) {
   unsigned assoc = atoi(argv[2]);
 
   string input_filename = argv[3];
+  string output_filename = "cache_sim_output.txt";
+
+  ifstream infile(input_filename);
+  ofstream outfile(output_filename);
 
   /* print the args */
+  cout << "\n";
   cout << "Number of entries: " << entries << endl;
   cout << "Associativity: " << assoc << endl;
   cout << "Input File Name: " << input_filename << endl;
 
   
   Cache cache(entries, assoc);
+  unsigned long addr;
+
+  while (infile >> addr) {
+      if (!cache.hit(outfile, addr)) {
+          cache.update(outfile, addr);
+      }
+  }
 
 
-   
+  infile.close();
+  outfile.close();
+
+
+
+  cout << "Output written to " << output_filename << endl;
+
   return 0;
 }
 
