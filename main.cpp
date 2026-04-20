@@ -10,7 +10,7 @@ public:
     tag = 0;
     ref = 0;
   }
-  ~Entry();
+  ~Entry(){}
   void display(ofstream& outfile){
     outfile << valid << " " << tag << " " << ref;
   }
@@ -36,7 +36,6 @@ public:
     num_entries = _num_entries;
     assoc = _assoc;
     num_sets = num_entries / assoc;
-    timer = 0; // -----
 
     entries = new Entry*[assoc];
 
@@ -44,7 +43,8 @@ public:
         entries[way] = new Entry[num_sets];
     }
   }
-  ~Cache(){
+
+  ~Cache(){ 
     for (int way = 0; way < assoc; way++) {
         delete[] entries[way];
     }
@@ -57,9 +57,7 @@ public:
     outfile << "Set " << set << ": ";
 
     for (int way = 0; way < assoc; way++) {
-        outfile << "[";
         entries[way][set].display(outfile);
-        outfile << "] ";
     }
 
     outfile << endl;
@@ -74,18 +72,16 @@ public:
   }
   
   bool hit(ofstream& outfile, unsigned long addr){
-        int index = get_index(addr);
+    int index = get_index(addr);
     int tag = get_tag(addr);
 
     for (int way = 0; way < assoc; way++) {
-      if (entries[way][index].get_valid() &&
-          entries[way][index].get_tag() == tag) {
+        if (entries[way][index].get_valid() &&
+            entries[way][index].get_tag() == tag) {
 
-          outfile << addr << " : HIT" << endl;
-
-          entries[way][index].set_ref(timer++);
-          return true;
-      }
+            outfile << addr << " : HIT" << endl;
+            return true;
+        }
     }
 
     outfile << addr << " : MISS" << endl;
@@ -96,30 +92,29 @@ public:
     int index = get_index(addr);
     int tag = get_tag(addr);
 
-    /* First try empty slot */
     for (int way = 0; way < assoc; way++) {
         if (!entries[way][index].get_valid()) {
             entries[way][index].set_valid(true);
             entries[way][index].set_tag(tag);
-            entries[way][index].set_ref(timer++);
+            entries[way][index].set_ref(counter++);
             return;
         }
     }
 
-    /* Replace LRU (smallest ref) */
-    int victim = 0;
-    int min_ref = entries[0][index].get_ref();
+    // using FIFO
+    int replace_way = 0;
+    int smallest = entries[0][index].get_ref(); // addr that went in first
 
     for (int way = 1; way < assoc; way++) {
-        if (entries[way][index].get_ref() < min_ref) {
-            min_ref = entries[way][index].get_ref();
-            victim = way;
+        if (entries[way][index].get_ref() < smallest) {
+            smallest = entries[way][index].get_ref();
+            replace_way = way;
         }
     }
 
-    entries[victim][index].set_valid(true);
-    entries[victim][index].set_tag(tag);
-    entries[victim][index].set_ref(timer++);
+    entries[replace_way][index].set_tag(tag);
+    entries[replace_way][index].set_ref(counter++);
+    entries[replace_way][index].set_valid(true);
 }
 
   
@@ -128,7 +123,6 @@ private:
   unsigned num_entries;
   int num_sets;
   Entry **entries;
-
-  int timer;
+  int counter; // tracks addr using FIFO
 };
 
